@@ -8,11 +8,13 @@ import datetime
 import BatchDatsetReader as dataset
 from six.moves import xrange
 
+import sys
+
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer("batch_size", "2", "batch size for training")
 tf.flags.DEFINE_string("logs_dir", "logs/", "path to logs directory")
 tf.flags.DEFINE_string("data_dir", "Data_zoo/MIT_SceneParsing/", "path to dataset")
-tf.flags.DEFINE_float("learning_rate", "1e-4", "Learning rate for Adam Optimizer")
+tf.flags.DEFINE_float("learning_rate", "1e-7", "Learning rate for Adam Optimizer")
 tf.flags.DEFINE_string("model_dir", "Model_zoo/", "Path to vgg model mat")
 tf.flags.DEFINE_bool('debug', "False", "Debug mode: True/ False")
 tf.flags.DEFINE_string('mode', "train", "Mode train/ test/ visualize")
@@ -69,7 +71,7 @@ def inference(image, keep_prob):
     :param keep_prob:
     :return:
     """
-    print("setting up vgg initialized conv layers ...")
+    println("setting up vgg initialized conv layers ...")
     model_data = utils.get_model_data(FLAGS.model_dir, MODEL_URL)
 
     mean = model_data['normalization'][0][0][0]
@@ -134,11 +136,14 @@ def train(loss_val, var_list):
     optimizer = tf.train.AdamOptimizer(FLAGS.learning_rate)
     grads = optimizer.compute_gradients(loss_val, var_list=var_list)
     if FLAGS.debug:
-        # print(len(var_list))
         for grad, var in grads:
             utils.add_gradient_summary(grad, var)
     return optimizer.apply_gradients(grads)
 
+
+def println(s):
+    print(s)
+    sys.stdout.flush()
 
 def main(argv=None):
     keep_probability = tf.placeholder(tf.float32, name="keep_probabilty")
@@ -160,15 +165,15 @@ def main(argv=None):
             utils.add_to_regularization_and_summary(var)
     train_op = train(loss, trainable_var)
 
-    print("Setting up summary op...")
+    println("Setting up summary op...")
     summary_op = tf.summary.merge_all()
 
-    print("Setting up image reader...")
+    println("Setting up image reader...")
     train_records, valid_records = scene_parsing.read_dataset(FLAGS.data_dir)
-    print(len(train_records))
-    print(len(valid_records))
+    println("train records is %d." % len(train_records))
+    println("valid records is %d." % len(valid_records))
 
-    print("Setting up dataset reader")
+    println("Setting up dataset reader")
     image_options = {'resize': True, 'resize_size': IMAGE_SIZE}
     if FLAGS.mode == 'train':
         train_dataset_reader = dataset.BatchDatset(train_records, image_options)
@@ -176,15 +181,16 @@ def main(argv=None):
 
     sess = tf.Session()
 
-    print("Setting up Saver...")
+    println("Setting up Saver...")
     saver = tf.train.Saver()
     summary_writer = tf.summary.FileWriter(FLAGS.logs_dir, sess.graph)
 
     sess.run(tf.global_variables_initializer())
     ckpt = tf.train.get_checkpoint_state(FLAGS.logs_dir)
     if ckpt and ckpt.model_checkpoint_path:
+        println("Model restoring(%s)..." % ckpt.model_checkpoint_path)
         saver.restore(sess, ckpt.model_checkpoint_path)
-        print("Model restored(%s)..." % ckpt.model_checkpoint_path)
+        println("Model restored(%s)..." % ckpt.model_checkpoint_path)
 
     if FLAGS.mode == "train":
         for itr in xrange(MAX_ITERATION):
@@ -195,14 +201,14 @@ def main(argv=None):
 
             if itr % 10 == 0:
                 train_loss, summary_str = sess.run([loss, summary_op], feed_dict=feed_dict)
-                print("Step: %d, Train_loss:%g" % (itr, train_loss))
+                println("Step: %d, Train_loss:%g" % (itr, train_loss))
                 summary_writer.add_summary(summary_str, itr)
 
             if itr % 500 == 0:
                 valid_images, valid_annotations = validation_dataset_reader.next_batch(FLAGS.batch_size)
                 valid_loss = sess.run(loss, feed_dict={image: valid_images, annotation: valid_annotations,
                                                        keep_probability: 1.0})
-                print("%s ---> Validation_loss: %g" % (datetime.datetime.now(), valid_loss))
+                println("%s ---> Validation_loss: %g" % (datetime.datetime.now(), valid_loss))
                 saver.save(sess, FLAGS.logs_dir + "model.ckpt", itr)
 
     elif FLAGS.mode == "visualize":
@@ -217,7 +223,7 @@ def main(argv=None):
             utils.save_image(valid_images[itr].astype(np.uint8), FLAGS.logs_dir, name=fn_format % (itr+1, "inp"))
             utils.save_image(valid_annotations[itr].astype(np.uint8), FLAGS.logs_dir, name=fn_format % (itr+1, "gt"))
             utils.save_image(pred[itr].astype(np.uint8), FLAGS.logs_dir, name=fn_format % (itr+1, "pred"))
-            print("Saved image: %s" % (fn_format.split('_')[0] % (itr+1)))
+            println("Saved image: %s" % (fn_format.split('_')[0] % (itr+1)))
 
 
 if __name__ == "__main__":
