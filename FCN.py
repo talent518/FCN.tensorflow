@@ -212,11 +212,12 @@ def main(argv=None):
         valid_annotations = np.squeeze(valid_annotations, axis=3)
         pred = np.squeeze(pred, axis=3)
 
+        fn_format = '%%0%dd_%%s' % len(str(FLAGS.batch_size))
         for itr in range(FLAGS.batch_size):
-            utils.save_image(valid_images[itr].astype(np.uint8), FLAGS.logs_dir, name="inp_" + str(5+itr))
-            utils.save_image(valid_annotations[itr].astype(np.uint8), FLAGS.logs_dir, name="gt_" + str(5+itr))
-            utils.save_image(pred[itr].astype(np.uint8), FLAGS.logs_dir, name="pred_" + str(5+itr))
-            print("Saved image: %d" % itr)
+            utils.save_image(valid_images[itr].astype(np.uint8), FLAGS.logs_dir, name=fn_format % (itr+1, "inp"))
+            utils.save_image(valid_annotations[itr].astype(np.uint8), FLAGS.logs_dir, name=fn_format % (itr+1, "gt"))
+            utils.save_image(pred[itr].astype(np.uint8), FLAGS.logs_dir, name=fn_format % (itr+1, "pred"))
+            print("Saved image: %s" % (fn_format.split('_')[0] % (itr+1)))
 
 
 if __name__ == "__main__":

@@ -8,7 +8,9 @@ from six.moves import urllib
 import tarfile
 import zipfile
 import scipy.io
+from PIL import Image
 
+COLORS = scipy.io.loadmat(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'color150.mat'))['colors']
 
 def get_model_data(dir_path, model_url):
     maybe_download_and_extract(dir_path, model_url)
@@ -54,6 +56,14 @@ def save_image(image, save_dir, name, mean=None):
     """
     if mean:
         image = unprocess_image(image, mean)
+    if len(image.shape)==2:
+        h, w = image.shape
+        img = Image.new('RGB', (h, w))
+        pixels = img.load()
+        for _h in range(h):
+            for _w in range(w):
+                pixels[_h, _w] = tuple(COLORS[image[_w, _h]-1] if image[_w, _h]>0 else [0,0,0])
+        image = np.array(img)
     misc.imsave(os.path.join(save_dir, name + ".png"), image)
 
 
