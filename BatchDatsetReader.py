@@ -3,7 +3,7 @@ Code ideas from https://github.com/Newmu/dcgan and tensorflow mnist dataset read
 """
 import numpy as np
 import scipy.misc as misc
-
+import sys
 
 class BatchDatset:
     files = []
@@ -32,8 +32,10 @@ class BatchDatset:
 
     def _read_images(self):
         self.__channels = True
+        self.__i = 0
         self.images = np.array([self._transform(filename['image']) for filename in self.files])
         self.__channels = False
+        self.__i = 0
         self.annotations = np.array(
             [np.expand_dims(self._transform(filename['annotation']), axis=3) for filename in self.files])
         print (self.images.shape)
@@ -50,6 +52,10 @@ class BatchDatset:
                                          [resize_size, resize_size], interp='nearest')
         else:
             resize_image = image
+
+        sys.stdout.write('\r>> reading images %s %.1f%%' % (filename, float(self.__i) / float(len(self.files)) * 100.0))
+        sys.stdout.flush()
+        self.__i += 1
 
         return np.array(resize_image)
 
