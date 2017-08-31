@@ -184,7 +184,7 @@ def main(argv=None):
     ckpt = tf.train.get_checkpoint_state(FLAGS.logs_dir)
     if ckpt and ckpt.model_checkpoint_path:
         saver.restore(sess, ckpt.model_checkpoint_path)
-        print("Model restored...")
+        print("Model restored(%s)..." % ckpt.model_checkpoint_path)
 
     if FLAGS.mode == "train":
         for itr in xrange(MAX_ITERATION):
