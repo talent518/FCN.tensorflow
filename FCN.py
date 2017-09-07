@@ -9,6 +9,7 @@ import BatchDatsetReader as dataset
 from six.moves import xrange
 
 import sys
+import time
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer("batch_size", "2", "batch size for training")
@@ -193,6 +194,7 @@ def main(argv=None):
         println("Model restored(%s)..." % ckpt.model_checkpoint_path)
 
     if FLAGS.mode == "train":
+        btime = time.time()
         for itr in xrange(MAX_ITERATION):
             train_images, train_annotations = train_dataset_reader.next_batch(FLAGS.batch_size)
             feed_dict = {image: train_images, annotation: train_annotations, keep_probability: 0.85}
@@ -201,7 +203,9 @@ def main(argv=None):
 
             if itr % 10 == 0:
                 train_loss, summary_str = sess.run([loss, summary_op], feed_dict=feed_dict)
-                println("Step: %d, Train_loss:%g" % (itr, train_loss))
+                etime = time.time()
+                println("Step: %d, Train_loss:%g (%g sec/step)" % (itr, train_loss, (etime - btime) / 10.0))
+                btime = etime
                 summary_writer.add_summary(summary_str, itr)
 
             if itr % 500 == 0:
