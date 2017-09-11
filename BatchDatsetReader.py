@@ -56,8 +56,9 @@ class BatchDatset:
         sys.stdout.write('\r>> reading images %s %.1f%%' % (filename, float(self.__i) / float(len(self.files)) * 100.0))
         sys.stdout.flush()
         self.__i += 1
-        sys.stdout.write('\n')
-        sys.stdout.flush()
+        if self.__i == len(self.files):
+            sys.stdout.write('\n')
+            sys.stdout.flush()
 
         return np.array(resize_image)
 
